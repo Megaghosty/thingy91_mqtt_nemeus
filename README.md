@@ -1,89 +1,136 @@
-# thingy91_mqtt_simple
-`nRF Connect SDK v2.7.0`
+# Thingy91_mqtt_NEMEIS
 
-## hardware / documentation
-- Thingy91
-  
-  ![image](https://github.com/droidecahedron/thingy91_adp5360_simple/assets/63935881/22f5c0fe-d8a3-462c-ace9-84259d406d86)
+Exemple minimaliste de collecte et publication de données capteurs + GNSS via MQTT sur Nordic Thingy:91 utilisé pour un projet
+**nRF Connect SDK v2.7.0**
 
-- [Web manpage](https://docs.nordicsemi.com/category/thingy91-category)
-- [Downloads (incl. schematic)](https://www.nordicsemi.com/Products/Development-hardware/Nordic-Thingy-91/Download)
+---
 
-## Overview
-This example code monitors the state of LED1, battery percentage (via thingy91 onboard pmic), air quality via onboard BME680 and geographical location.
+## Présentation
 
-It connects to an mqtt broker of your choice and you can publish/subscribe to an arbitrary topic. Most of the information can be found at Nordic Developer Academy for cellular fundamentals [(link)](https://academy.nordicsemi.com/courses/cellular-iot-fundamentals).
-However, there is a UDP+GNSS, COAP+GNSS, but not an MQTT+GNSS. Asset Tracker v2 is a bit dense and connects to nRF Cloud, this is a stripped down unofficial example. The academy covers how to add TLS, I did not feel it necessary here.
+Ce projet permet de :
+- Surveiller l’état de la LED1
+- Lire le pourcentage de batterie (via PMIC ADP5360)
+- Mesurer la qualité de l’air (capteur BME680)
+- Récupérer la position GNSS
 
-This code uses few synchronization primitives or messaging methods to make certain parts of the application clearer and more explicit via globals instead of semaphores and zbus/message queues. In reality, you should use the latter. Helpful links: [zbus](https://docs.zephyrproject.org/latest/services/zbus/index.html), [message queues](https://docs.zephyrproject.org/latest/kernel/services/data_passing/message_queues.html), [thread synchronization](https://academy.nordicsemi.com/courses/nrf-connect-sdk-fundamentals/lessons/lesson-8-thread-synchronization/)
+L’application se connecte à un broker MQTT de votre choix, publie automatiquement l’état du device toutes les **30 secondes** et permet le contrôle de la LED1 à distance.  
+Ce code est volontairement épuré pour faciliter la compréhension et l’expérimentation avec le Thingy:91.
 
-## Configuring
-Select your endpoint via prj.conf and the kconfigs `CONFIG_MQTT_PUB_TOPIC` and `CONFIG_MQTT_SUB_TOPIC`.
+---
 
-[Kconfig](https://github.com/droidecahedron/thingy91_mqtt_simple/blob/main/Kconfig) has most of the configurations around timing.
-[prj.conf](https://github.com/droidecahedron/thingy91_mqtt_simple/blob/main/prj.conf) has the rest.
+## Fonctionnalités
 
+- **Publication automatique** : toutes les 30 secondes, l’état du device (LED, batterie, air, GNSS) est publié en JSON sur le topic MQTT configuré.
+- **Envoi manuel** : un appui sur le bouton du Thingy:91 force la publication immédiate.
+- **Contrôle LED1** : publiez `LED1ON` ou `LED1OFF` sur le topic de souscription pour piloter la LED1 à distance.
+- **Logs détaillés** : suivez la connexion LTE, les coordonnées GNSS et les échanges MQTT via le port série.
+- **Configuration flexible** : topics, endpoint MQTT et timings configurables dans `prj.conf` et Kconfig.
 
-## Building
+---
 
-For the Thingy91:
+## Prérequis
 
-```
-$ west build -b thingy91/nrf9160/ns -p auto
-```
+- Nordic Thingy:91 avec SIM LTE-M/NB-IoT fonctionnelle
+- nRF Connect SDK v2.7.0 installé
+- Outils `west`, `nrfjprog`, etc.
+- Accès à un broker MQTT (public ou privé)
+- Logiciel client MQTT (MQTT Explorer, mosquitto_sub, etc.)
 
-For the nRF9160-DK
+---
 
-```
-$ west build -b nrf9160dk/nrf9160/ns -p auto
-```
+## Configuration
 
-##  Usage
-
-You can publish to whatever you configure the sub topic to in order to control the state of LED1 on the device. Simply publish `LED1ON` OR `LED1OFF`.
-
-You will want to monitor the logs to see when you get your first fix, until then lat/long/alt default to 0 as the device does not know where it is yet. There will be a log stating the coordinates and that the module is going to sleep.
-
-Push the button to upload a device state json string to your endpoint broker. If the orange cover is on, it is flexible so you can also push down on the Nordic logo.
-
-![image](https://github.com/user-attachments/assets/7f5871e3-0b26-4e75-9673-72441118c226)
-
-
-All modules modify a global data structure that gets published. Ideally you would use messaging or zbus and synchronization primitives. This code does not.
-Module | Function
---|--
-main | Initialization and main connection logic
-mqtt | mqtt connection implementation
-gnss | modem configurations and locationing logic
-pmic | (thingy91 specific) pmic initialization and periodic sampling **[1]**
-datatypes | struct for holding system data variables, and basic json snprintf for the struct. **[2]**
-sensors | tasks and implementation for the onboard aqi sensor (bme680)
-
-> **[1]** : Thingy91 has an ADP5360 PMIC (shame it's not a Nordic nPM1300), but the atv2's sensor module does not init the device, it happens as a board init via SYS_INIT. This sample shows init and using it via start-up thread, or via SYS_INIT like the atv2/thingy91 board init does.
-> You change the `DEBUG_USE_SYSINIT` define in `pmic.h` to true/false depending on how you want it to swing. `thingy91_board_init` is broken out from the board init in the SDK which has a `SYS_INIT` that gets called. [**Here**](https://github.com/droidecahedron/thingy91_adp5360_simple/assets/63935881/9b8076cf-b1c9-422e-8dfe-1ba4d923207c) is a handy diagram for `SYS_INIT` that I like to refer to.
-> 
-> `SYS_INIT` a handy thing to read about and potentially use in case you are working on controlling something in both bootloader and application, and run into strange cases of application driver inits wiping any work done in the boot. (For example, having a pin stay high from boot to a specific execution in application). However, in the case of atv2 and peeling functionality out, it can make it harder to reason about what the code is doing. It also complicates error handling a bit as well.
-> Further reading here: [Zephyr project SYS_INIT doc](https://docs.zephyrproject.org/latest/doxygen/html/group__sys__init.html), [NCS Intermediate](https://academy.nordicsemi.com/courses/nrf-connect-sdk-intermediate/lessons/lesson-1-zephyr-rtos-advanced/topic/boot-up-sequence-execution-context/)
-
-> **[2]** :  You should use a lib for json (like coreJSON) but this gets the job done. JSON in general is a bit much for constrained devices, but aws likes it so I've just opted to manually craft the string.
+1. **Cloner le dépôt**
+git clone <url_du_repo>
+cd hingy91_mqtt_simple
 
 
 
-## Terminal Shots
+2. **Configurer les topics et l’endpoint MQTT**
+- Modifier `prj.conf` pour l’URL du broker.
+- Adapter les topics dans Kconfig (`CONFIG_MQTT_PUB_TOPIC` et `CONFIG_MQTT_SUB_TOPIC`).
 
-**Device Side on button push**
+3. **Configurer les timings**
+- Le délai entre deux publications automatiques est paramétré à 30 secondes par défaut (voir Kconfig).
 
-![image](https://github.com/user-attachments/assets/64686711-2e54-4e5d-ab6c-04427cf825ec)
+---
+
+## Compilation
+
+Pour Thingy:91 :
+west build -b thingy91/nrf9160/ns -p auto
 
 
-**Server side (via MQTT Explorer)**
 
-![image](https://github.com/user-attachments/assets/aa08122a-a4d8-4f42-9b85-e7d1f8516bdb)
+Pour nRF9160-DK :
+west build -b nrf9160dk/nrf9160/ns -p auto
 
 
-**Controlling LED**
 
-![image](https://github.com/user-attachments/assets/d0f21db9-60b3-41bb-bd54-b10dfb08b031)
+---
 
-![image](https://github.com/user-attachments/assets/82115deb-b2e4-48bc-bc44-4949ad5d17e7)
+## Flash et utilisation
 
+1. **Flasher le firmware**
+west flash
+
+
+
+2. **Démarrer le Thingy:91**
+- Le device se connecte automatiquement au réseau LTE puis au broker MQTT.
+- Surveillez les logs série pour suivre l’état de la connexion et les messages envoyés.
+
+3. **Publier une commande LED**
+- Pour allumer la LED1 : publier `LED1ON` sur le topic de souscription.
+- Pour éteindre la LED1 : publier `LED1OFF`.
+
+4. **Recevoir les données**
+- Les messages JSON sont publiés toutes les 30 secondes sur le topic configuré.
+- Un appui sur le bouton force l’envoi immédiat du message JSON.
+
+---
+
+## Exemple de message JSON publié
+
+{
+"led1": 1,
+"battery": 92,
+"air_quality": 43,
+"lat": 48.8566,
+"lon": 2.3522,
+"alt": 35
+}
+
+
+*Remarque : Avant le premier fix GNSS, lat/lon/alt sont à 0.*
+
+---
+
+## Architecture du code
+
+| Module    | Fonction principale                                         |
+|-----------|------------------------------------------------------------|
+| main      | Initialisation et logique principale de connexion          |
+| mqtt      | Gestion de la connexion MQTT                               |
+| gnss      | Configuration modem et récupération GNSS                   |
+| pmic      | Initialisation PMIC et lecture périodique batterie         |
+| datatypes | Structure des données système et génération JSON           |
+| sensors   | Lecture du capteur BME680 (qualité de l’air)               |
+
+---
+
+## Remarques techniques
+
+- Ce code utilise principalement des variables globales pour la clarté.  
+  Pour la production, privilégiez les primitives de synchronisation (zbus, message queues, sémaphores).
+- La construction du message JSON est manuelle pour limiter l’empreinte mémoire.
+- Pour ajouter la sécurité TLS, référez-vous à la [Nordic Developer Academy](https://academy.nordicsemi.com).
+
+---
+
+## Ressources
+
+- [Nordic Developer Academy – Cellular fundamentals](https://academy.nordicsemi.com)
+- [Documentation SYS_INIT Zephyr](https://docs.zephyrproject.org/latest/develop/runtime_init.html)
+
+---
