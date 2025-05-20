@@ -264,7 +264,7 @@ static int broker_init(void)
 		.ai_family = AF_INET,
 		.ai_socktype = SOCK_STREAM};
 
-	err = getaddrinfo(CONFIG_MQTT_BROKER_HOSTNAME, NULL, &hints, &result);
+	err = getaddrinfo(MQTT_BROKER_ADDR, NULL, &hints, &result);
 	if (err)
 	{
 		LOG_ERR("getaddrinfo failed: %d", err);
@@ -287,7 +287,7 @@ static int broker_init(void)
 				((struct sockaddr_in *)addr->ai_addr)
 					->sin_addr.s_addr;
 			broker4->sin_family = AF_INET;
-			broker4->sin_port = htons(CONFIG_MQTT_BROKER_PORT);
+			broker4->sin_port = htons(MQTT_BROKER_PORT);
 
 			inet_ntop(AF_INET, &broker4->sin_addr.s_addr,
 					  ipv4_addr, sizeof(ipv4_addr));
