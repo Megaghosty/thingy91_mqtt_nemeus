@@ -85,8 +85,8 @@ static int subscribe(struct mqtt_client *const c)
 {
 	struct mqtt_topic subscribe_topic = {
 		.topic = {
-			.utf8 = CONFIG_MQTT_SUB_TOPIC,
-			.size = strlen(CONFIG_MQTT_SUB_TOPIC)},
+			.utf8 = MQTT_TOPIC,
+			.size = strlen(MQTT_TOPIC)},
 		.qos = MQTT_QOS_1_AT_LEAST_ONCE};
 
 	const struct mqtt_subscription_list subscription_list = {
@@ -94,8 +94,8 @@ static int subscribe(struct mqtt_client *const c)
 		.list_count = 1,
 		.message_id = 1234};
 
-	LOG_INF("Subscribing to: %s len %u", CONFIG_MQTT_SUB_TOPIC,
-			(unsigned int)strlen(CONFIG_MQTT_SUB_TOPIC));
+	LOG_INF("Subscribing to: %s len %u", MQTT_TOPIC,
+			(unsigned int)strlen(MQTT_TOPIC));
 
 	return mqtt_subscribe(c, &subscription_list);
 }
@@ -144,7 +144,7 @@ void mqtt_evt_handler(struct mqtt_client *const c,
 	switch (evt->type)
 	{
 	case MQTT_EVT_CONNACK:
-		/* Subscribe to the topic CONFIG_MQTT_SUB_TOPIC when we have a successful connection */
+		/* Subscribe to the topic MQTT_TOPIC when we have a successful connection */
 		if (evt->result != 0)
 		{
 			LOG_ERR("MQTT connect failed: %d", evt->result);
