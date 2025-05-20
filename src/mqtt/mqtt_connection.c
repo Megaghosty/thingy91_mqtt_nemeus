@@ -18,12 +18,20 @@
 #include <zephyr/random/random.h>
 #endif
 
+#define MQTT_BROKER_ADDR "CIEL-Broceliande.myasustor.com"
+#define MQTT_BROKER_PORT 1883
+#define MQTT_TOPIC       "test/topic"
+
+#define TLS_SEC_TAG 42
+
 extern device_shadow_t g_device_state;
+static struct mqtt_client client;
+static struct sockaddr_storage broker;
 
 /* Buffers for MQTT client. */
-static uint8_t rx_buffer[CONFIG_MQTT_MESSAGE_BUFFER_SIZE];
-static uint8_t tx_buffer[CONFIG_MQTT_MESSAGE_BUFFER_SIZE];
-static uint8_t payload_buf[CONFIG_MQTT_PAYLOAD_BUFFER_SIZE];
+static uint8_t rx_buffer[1024];
+static uint8_t tx_buffer[1024];
+static uint8_t payload_buf[256];
 
 /* MQTT Broker details. */
 static struct sockaddr_storage broker;
@@ -111,8 +119,8 @@ int data_publish(struct mqtt_client *c, enum mqtt_qos qos,
 	struct mqtt_publish_param param;
 
 	param.message.topic.qos = qos;
-	param.message.topic.topic.utf8 = CONFIG_MQTT_PUB_TOPIC;
-	param.message.topic.topic.size = strlen(CONFIG_MQTT_PUB_TOPIC);
+	param.message.topic.topic.utf8 = MQTT_TOPIC;
+	param.message.topic.topic.size = strlen(MQTT_TOPIC);
 	param.message.payload.data = data;
 	param.message.payload.len = len;
 	param.message_id = sys_rand32_get();
@@ -121,8 +129,8 @@ int data_publish(struct mqtt_client *c, enum mqtt_qos qos,
 
 	data_print("Publishing: ", data, len);
 	LOG_INF("to topic: %s len: %u",
-			CONFIG_MQTT_PUB_TOPIC,
-			(unsigned int)strlen(CONFIG_MQTT_PUB_TOPIC));
+			MQTT_TOPIC,
+			(unsigned int)strlen(MQTT_TOPIC));
 
 	return mqtt_publish(c, &param);
 }
@@ -355,22 +363,29 @@ int client_init(struct mqtt_client *client)
 	}
 
 	/* MQTT client configuration */
-	client->broker = &broker;
-	client->evt_cb = mqtt_evt_handler;
-	client->client_id.utf8 = client_id_get();
-	client->client_id.size = strlen(client->client_id.utf8);
+    client.broker = &broker;
+    client.evt_cb = NULL;
+    client.client_id.utf8 = (uint8_t *)"thingy91_client";
+    client.client_id.size = strlen("thingy91_client");
 	client->password = NULL;
 	client->user_name = NULL;
 	client->protocol_version = MQTT_VERSION_3_1_1;
 
 	/* MQTT buffers configuration */
-	client->rx_buf = rx_buffer;
-	client->rx_buf_size = sizeof(rx_buffer);
-	client->tx_buf = tx_buffer;
-	client->tx_buf_size = sizeof(tx_buffer);
+    client.rx_buf = rx_buffer;
+    client.rx_buf_size = sizeof(rx_buffer);
+    client.tx_buf = tx_buffer;
+    client.tx_buf_size = sizeof(tx_buffer);
 
 	/* We are not using TLS in Exercise 1 */
-	client->transport.type = MQTT_TRANSPORT_NON_SECURE;
+	client.transport.type = MQTT_TRANSPORT_SECURE;
+
+	static sec_tag_t sec_tag_list[] = { TLS_SEC_TAG };
+    client.transport.tls.config.peer_verify = 2;
+    client.transport.tls.config.cipher_list = NULL;
+    client.transport.tls.config.sec_tag_list = sec_tag_list;
+    client.transport.tls.config.sec_tag_count = ARRAY_SIZE(sec_tag_list);
+    client.transport.tls.config.hostname = MQTT_BROKER_ADDR;
 
 	return err;
 }
@@ -379,7 +394,7 @@ int client_init(struct mqtt_client *client)
  */
 int fds_init(struct mqtt_client *c, struct pollfd *fds)
 {
-	if (c->transport.type == MQTT_TRANSPORT_NON_SECURE)
+	if (c->transport.type == MQTT_TRANSPORT_SECURE)
 	{
 		fds->fd = c->transport.tcp.sock;
 	}
