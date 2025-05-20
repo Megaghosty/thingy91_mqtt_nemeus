@@ -378,7 +378,7 @@ int client_init(struct mqtt_client *client)
     client->tx_buf_size = sizeof(tx_buffer);
 
 	/* We are not using TLS in Exercise 1 */
-	client->transport.type = MQTT_TRANSPORT_SECURE_TLS;
+	client->transport.type = MQTT_TRANSPORT_SECURE
 
 	static sec_tag_t sec_tag_list[] = { TLS_SEC_TAG };
     client->transport.tls.config.peer_verify = 2;
@@ -394,7 +394,7 @@ int client_init(struct mqtt_client *client)
  */
 int fds_init(struct mqtt_client *c, struct pollfd *fds)
 {
-	if (c->transport.type == MQTT_TRANSPORT_SECURE_TLS)
+	if (c->transport.type == MQTT_TRANSPORT_SECURE)
 	{
 		fds->fd = c->transport.tcp.sock;
 	}
