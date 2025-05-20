@@ -363,29 +363,29 @@ int client_init(struct mqtt_client *client)
 	}
 
 	/* MQTT client configuration */
-    client.broker = &broker;
-    client.evt_cb = NULL;
-    client.client_id.utf8 = (uint8_t *)"thingy91_client";
-    client.client_id.size = strlen("thingy91_client");
+    client->broker = &broker;
+    client->evt_cb = NULL;
+    client->client_id.utf8 = (uint8_t *)"thingy91_client";
+    client->client_id.size = strlen("thingy91_client");
 	client->password = NULL;
 	client->user_name = NULL;
 	client->protocol_version = MQTT_VERSION_3_1_1;
 
 	/* MQTT buffers configuration */
-    client.rx_buf = rx_buffer;
-    client.rx_buf_size = sizeof(rx_buffer);
-    client.tx_buf = tx_buffer;
-    client.tx_buf_size = sizeof(tx_buffer);
+    client->rx_buf = rx_buffer;
+    client->rx_buf_size = sizeof(rx_buffer);
+    client->tx_buf = tx_buffer;
+    client->tx_buf_size = sizeof(tx_buffer);
 
 	/* We are not using TLS in Exercise 1 */
-	client.transport.type = MQTT_TRANSPORT_SECURE;
+	client->transport.type = MQTT_TRANSPORT_SECURE;
 
 	static sec_tag_t sec_tag_list[] = { TLS_SEC_TAG };
-    client.transport.tls.config.peer_verify = 2;
-    client.transport.tls.config.cipher_list = NULL;
-    client.transport.tls.config.sec_tag_list = sec_tag_list;
-    client.transport.tls.config.sec_tag_count = ARRAY_SIZE(sec_tag_list);
-    client.transport.tls.config.hostname = MQTT_BROKER_ADDR;
+    client->transport.tls.config.peer_verify = 2;
+    client->transport.tls.config.cipher_list = NULL;
+    client->transport.tls.config.sec_tag_list = sec_tag_list;
+    client->transport.tls.config.sec_tag_count = ARRAY_SIZE(sec_tag_list);
+    client->transport.tls.config.hostname = MQTT_BROKER_ADDR;
 
 	return err;
 }
