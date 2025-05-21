@@ -363,7 +363,7 @@ int client_init(struct mqtt_client *client)
 
 	client->transport.type = MQTT_TRANSPORT_SECURE;
 
-    tls_config->peer_verify = CONFIG_PEER_VERIFY;
+    tls_config->peer_verify = 2;
     tls_config->cipher_count = 0;
  	tls_config->cipher_list = NULL;
     tls_config->sec_tag_count = ARRAY_SIZE(sec_tag_list);
