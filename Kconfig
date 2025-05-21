@@ -69,6 +69,16 @@ config GNSS_PERIODIC_TIMEOUT
 	  Fix timeout (in seconds) for periodic fixes.
 	  If set to zero, GNSS is allowed to run indefinitely until a valid PVT estimate is produced.
 
+config SEC_TAG
+    int "Security tag to use for the connection"
+    default 42
+
+config PEER_VERIFY
+    int "Peer verify parameter for mqtt_client"
+    default 2
+    help
+        Set to 0 for VERIFY_NONE, 1 for VERIFY_OPTIONAL, and 2 for VERIFY_REQUIRED.
+
 endmenu
 
 source "Kconfig.zephyr"

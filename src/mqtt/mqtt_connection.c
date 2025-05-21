@@ -6,7 +6,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/net/socket.h>
 #include <zephyr/net/mqtt.h>
-#include <nrf_modem_at.h>
+//#include <nrf_modem_at.h>
 
 #include <modem/modem_key_mgmt.h>
 
@@ -20,12 +20,6 @@
 #else
 #include <zephyr/random/random.h>
 #endif
-
-#define MQTT_BROKER_ADDR "CIEL-Broceliande.myasustor.com"
-#define MQTT_BROKER_PORT 1883
-#define MQTT_TOPIC       "test/topic"
-
-#define TLS_SEC_TAG 42
 
 extern device_shadow_t g_device_state;
 static struct mqtt_client client;
@@ -365,6 +359,18 @@ int client_init(struct mqtt_client *client)
 		return err;
 	}
 
+	struct mqtt_sec_config *tls_cfg = &(client->transport).tls.config;
+	static sec_tag_t sec_tag_list[] = { CONFIG_MQTT_TLS_SEC_TAG };
+
+	client->transport.type = MQTT_TRANSPORT_SECURE;
+
+    tls_config->peer_verify = CONFIG_PEER_VERIFY;
+    tls_config->cipher_count = 0;
+ 	tls_config->cipher_list = NULL;
+    tls_config->sec_tag_count = ARRAY_SIZE(sec_tag_list);
+    tls_config->sec_tag_list = sec_tag_list;
+    tls_config->hostname = CONFIG_MQTT_BROKER_HOSTNAME;
+
 	/* MQTT client configuration */
     client->broker = &broker;
     client->evt_cb = NULL;
@@ -380,16 +386,6 @@ int client_init(struct mqtt_client *client)
     client->tx_buf = tx_buffer;
     client->tx_buf_size = sizeof(tx_buffer);
 
-	/* We are not using TLS in Exercise 1 */
-	client->transport.type = MQTT_TRANSPORT_SECURE;
-
-	static sec_tag_t sec_tag_list[] = { TLS_SEC_TAG };
-    client->transport.tls.config.peer_verify = 2;
-    client->transport.tls.config.cipher_list = NULL;
-    client->transport.tls.config.sec_tag_list = sec_tag_list;
-    client->transport.tls.config.sec_tag_count = ARRAY_SIZE(sec_tag_list);
-    client->transport.tls.config.hostname = MQTT_BROKER_ADDR;
-
 	return err;
 }
 
@@ -399,7 +395,7 @@ int fds_init(struct mqtt_client *c, struct pollfd *fds)
 {
 	if (c->transport.type == MQTT_TRANSPORT_SECURE)
 	{
-		fds->fd = c->transport.tcp.sock;
+		fds->fd = c->transport.tls.sock;
 	}
 	else
 	{
