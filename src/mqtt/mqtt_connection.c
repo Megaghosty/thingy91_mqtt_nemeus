@@ -82,8 +82,8 @@ static int subscribe(struct mqtt_client *const c)
 {
 	struct mqtt_topic subscribe_topic = {
 		.topic = {
-			.utf8 = MQTT_TOPIC,
-			.size = strlen(MQTT_TOPIC)},
+			.utf8 = CONFIG_MQTT_SUB_TOPIC,
+			.size = strlen(CONFIG_MQTT_SUB_TOPIC)},
 		.qos = MQTT_QOS_1_AT_LEAST_ONCE};
 
 	const struct mqtt_subscription_list subscription_list = {
@@ -91,8 +91,7 @@ static int subscribe(struct mqtt_client *const c)
 		.list_count = 1,
 		.message_id = 1234};
 
-	LOG_INF("Subscribing to: %s len %u", MQTT_TOPIC,
-			(unsigned int)strlen(MQTT_TOPIC));
+	LOG_INF("Subscribing to: %s len %u", CONFIG_MQTT_SUB_TOPIC,(unsigned int)strlen(CONFIG_MQTT_SUB_TOPIC));
 
 	return mqtt_subscribe(c, &subscription_list);
 }
@@ -261,7 +260,7 @@ static int broker_init(void)
 		.ai_family = AF_INET,
 		.ai_socktype = SOCK_STREAM};
 
-	err = getaddrinfo(MQTT_BROKER_ADDR, NULL, &hints, &result);
+	err = getaddrinfo(CONFIG_MQTT_BROKER_HOSTNAME, NULL, &hints, &result);
 	if (err)
 	{
 		LOG_ERR("getaddrinfo failed: %d", err);
@@ -284,7 +283,7 @@ static int broker_init(void)
 				((struct sockaddr_in *)addr->ai_addr)
 					->sin_addr.s_addr;
 			broker4->sin_family = AF_INET;
-			broker4->sin_port = htons(MQTT_BROKER_PORT);
+			broker4->sin_port = htons(CONFIG_MQTT_BROKER_PORT);
 
 			inet_ntop(AF_INET, &broker4->sin_addr.s_addr,
 					  ipv4_addr, sizeof(ipv4_addr));
@@ -360,7 +359,7 @@ int client_init(struct mqtt_client *client)
 	}
 
 	struct mqtt_sec_config *tls_cfg = &(client->transport).tls.config;
-	static sec_tag_t sec_tag_list[] = { CONFIG_MQTT_TLS_SEC_TAG };
+	static sec_tag_t sec_tag_list[] = { 42 };
 
 	client->transport.type = MQTT_TRANSPORT_SECURE;
 
