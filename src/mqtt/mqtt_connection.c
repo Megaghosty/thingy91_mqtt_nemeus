@@ -26,9 +26,9 @@ static struct mqtt_client client;
 static struct sockaddr_storage broker;
 
 /* Buffers for MQTT client. */
-static uint8_t rx_buffer[1024];
-static uint8_t tx_buffer[1024];
-static uint8_t payload_buf[256];
+static uint8_t rx_buffer[CONFIG_MQTT_MESSAGE_BUFFER_SIZE];
+static uint8_t tx_buffer[CONFIG_MQTT_MESSAGE_BUFFER_SIZE];
+static uint8_t payload_buf[CONFIG_MQTT_PAYLOAD_BUFFER_SIZE];
 
 /* MQTT Broker details. */
 static struct sockaddr_storage broker;
@@ -116,8 +116,8 @@ int data_publish(struct mqtt_client *c, enum mqtt_qos qos,
 	struct mqtt_publish_param param;
 
 	param.message.topic.qos = qos;
-	param.message.topic.topic.utf8 = MQTT_TOPIC;
-	param.message.topic.topic.size = strlen(MQTT_TOPIC);
+	param.message.topic.topic.utf8 = CONFIG_MQTT_PUB_TOPIC;
+	param.message.topic.topic.size = strlen(CONFIG_MQTT_PUB_TOPIC);
 	param.message.payload.data = data;
 	param.message.payload.len = len;
 	param.message_id = sys_rand32_get();
@@ -126,8 +126,8 @@ int data_publish(struct mqtt_client *c, enum mqtt_qos qos,
 
 	data_print("Publishing: ", data, len);
 	LOG_INF("to topic: %s len: %u",
-			MQTT_TOPIC,
-			(unsigned int)strlen(MQTT_TOPIC));
+			CONFIG_MQTT_PUB_TOPIC,
+			(unsigned int)strlen(CONFIG_MQTT_PUB_TOPIC));
 
 	return mqtt_publish(c, &param);
 }
@@ -373,9 +373,9 @@ int client_init(struct mqtt_client *client)
 
 	/* MQTT client configuration */
     client->broker = &broker;
-    client->evt_cb = NULL;
-    client->client_id.utf8 = (uint8_t *)"thingy91_client";
-    client->client_id.size = strlen("thingy91_client");
+    client->evt_cb = mqtt_evt_handler;
+    client->client_id.utf8 = client_id_get();
+    client->client_id.size = strlen(client->client_id.utf8);
 	client->password = NULL;
 	client->user_name = NULL;
 	client->protocol_version = MQTT_VERSION_3_1_1;
