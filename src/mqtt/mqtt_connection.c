@@ -8,9 +8,12 @@
 #include <zephyr/net/mqtt.h>
 #include <nrf_modem_at.h>
 
+#include <modem/modem_key_mgmt.h>
+
 #include <dk_buttons_and_leds.h>
 #include "mqtt_connection.h"
 #include "../datatypes/datatypes.h"
+
 
 #if NCS_VERSION_NUMBER < 0x20600
 #include <zephyr/random/rand32.h>
@@ -378,7 +381,7 @@ int client_init(struct mqtt_client *client)
     client->tx_buf_size = sizeof(tx_buffer);
 
 	/* We are not using TLS in Exercise 1 */
-	client->transport.type = MQTT_TRANSPORT_SECURE
+	client->transport.type = MQTT_TRANSPORT_SECURE;
 
 	static sec_tag_t sec_tag_list[] = { TLS_SEC_TAG };
     client->transport.tls.config.peer_verify = 2;
