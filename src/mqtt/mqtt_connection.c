@@ -6,7 +6,8 @@
 #include <zephyr/kernel.h>
 #include <zephyr/net/socket.h>
 #include <zephyr/net/mqtt.h>
-//#include <nrf_modem_at.h>
+#include <nrf_modem_at.h>
+
 
 #include <modem/modem_key_mgmt.h>
 
@@ -22,7 +23,6 @@
 #endif
 
 extern device_shadow_t g_device_state;
-static struct mqtt_client client;
 static struct sockaddr_storage broker;
 
 /* Buffers for MQTT client. */
@@ -363,12 +363,12 @@ int client_init(struct mqtt_client *client)
 
 	client->transport.type = MQTT_TRANSPORT_SECURE;
 
-    tls_config->peer_verify = 2;
-    tls_config->cipher_count = 0;
- 	tls_config->cipher_list = NULL;
-    tls_config->sec_tag_count = ARRAY_SIZE(sec_tag_list);
-    tls_config->sec_tag_list = sec_tag_list;
-    tls_config->hostname = CONFIG_MQTT_BROKER_HOSTNAME;
+    tls_cfg->peer_verify = 2;
+    tls_cfg->cipher_count = 0;
+ 	tls_cfg->cipher_list = NULL;
+    tls_cfg->sec_tag_count = ARRAY_SIZE(sec_tag_list);
+    tls_cfg->sec_tag_list = sec_tag_list;
+    tls_cfg->hostname = CONFIG_MQTT_BROKER_HOSTNAME;
 
 	/* MQTT client configuration */
     client->broker = &broker;
